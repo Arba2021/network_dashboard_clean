@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌌 NEURAL COSMOS DASHBOARD</title>
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Leaflet.js for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Local CSS -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+  <!-- Starfield Canvas -->
+  <canvas id="starCanvas"></canvas>
+  
+  <!-- Main Content -->
+  <div class="relative z-10">
+    <header class="neural-header">
+      <h1 class="neural-title font-extrabold animate-pulse">🌠 NEURAL COSMOS</h1>
+      <div class="text-lg mt-4 text-gray-300 font-mono font-semibold animate-fade">Advanced Network Analysis System v3.0 🚀</div>
+      
+      <div class="mt-10 flex justify-center">
+        <button onclick="initiateScan()" id="scanBtn" class="neural-btn font-extrabold group">
+          <i class="fas fa-rocket mr-3 animate-bounce"></i>ACTIVATE COSMIC SCAN
+          <span id="loading" style="display:none;" class="ml-2">⏳</span>
+        </button>
+      </div>
+    </header>
+    
+    <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-8">
+      <!-- Speed Test Card -->
+      <section class="neural-card transform hover:scale-105 transition duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl text-cosmic-blue font-extrabold flex items-center">
+            <i class="fas fa-bolt mr-3 text-neon-green"></i>Speed Test ⚡
+          </h3>
+          <div class="neural-status status-standby font-extrabold" id="speed-status">STANDBY</div>
+        </div>
+        <div id="speed-details" class="text-xl space-y-3 font-semibold">
+          <div><i class="fas fa-download text-green-400 mr-3"></i>Download: <span id="download-speed">--</span> Mbps</div>
+          <div><i class="fas fa-upload text-blue-400 mr-3"></i>Upload: <span id="upload-speed">--</span> Mbps</div>
+          <div><i class="fas fa-clock text-yellow-400 mr-3"></i>Ping: <span id="ping-time">--</span> ms</div>
+          <div><i class="fas fa-building text-purple-400 mr-3"></i>ISP: <span id="speed-isp">--</span></div>
+          <div><i class="fas fa-globe text-orange-400 mr-3"></i>Server: <span id="speed-host">--</span></div>
+          <div><i class="fas fa-map-marker-alt text-red-400 mr-3"></i>Server Loc: <span id="speed-server-location">--</span></div>
+          <div><i class="fas fa-signal text-green-400 mr-3"></i>Latency: <span id="speed-latency">--</span> ms</div>
+          <div><i class="fas fa-exclamation-triangle text-yellow-400 mr-3"></i>Packet Loss: <span id="speed-packet-loss">--</span>%</div>
+        </div>
+      </section>
+      
+      <!-- IP Info Card -->
+      <section class="neural-card transform hover:scale-105 transition duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl text-cosmic-blue font-extrabold flex items-center">
+            <i class="fas fa-globe mr-3 text-neon-green"></i>IP Info 🌐
+          </h3>
+          <div class="neural-status status-standby font-extrabold" id="ip-status">STANDBY</div>
+        </div>
+        <div id="ip-details" class="text-xl space-y-3 font-semibold">
+          <div><i class="fas fa-map-marker-alt text-red-400 mr-3"></i>IP: <span id="public-ip">--</span></div>
+          <div id="ip-map" style="display: none;"></div>
+        </div>
+      </section>
+      
+      <!-- Device Info Card -->
+      <section class="neural-card transform hover:scale-105 transition duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl text-cosmic-blue font-extrabold flex items-center">
+            <i class="fas fa-laptop mr-3 text-neon-green"></i>Device Info 💻
+          </h3>
+          <div class="neural-status status-standby font-extrabold" id="device-status">STANDBY</div>
+        </div>
+        <div id="device-details" class="text-xl space-y-3 font-semibold">
+          <div><i class="fas fa-desktop text-blue-400 mr-3"></i>Device: <span id="device-name">--</span></div>
+          <div><i class="fas fa-microchip text-green-400 mr-3"></i>OS: <span id="os-name">--</span></div>
+          <div><i class="fas fa-code text-yellow-400 mr-3"></i>Platform: <span id="platform-name">--</span></div>
+        </div>
+      </section>
+      
+      <!-- Network Type Card -->
+      <section class="neural-card transform hover:scale-105 transition duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl text-cosmic-blue font-extrabold flex items-center">
+            <i class="fas fa-wifi mr-3 text-neon-green"></i>Network Type 📡
+          </h3>
+          <div class="neural-status status-standby font-extrabold" id="network-status">STANDBY</div>
+        </div>
+        <div id="network-details" class="text-xl space-y-3 font-semibold">
+          <div><i class="fas fa-signal text-green-400 mr-3"></i>Type: <span id="network-type">--</span></div>
+          <div><i class="fas fa-wifi text-blue-400 mr-3"></i>Name: <span id="wifi-name">--</span></div>
+          <div><i class="fas fa-chart-bar text-yellow-400 mr-3"></i>Signal: <span id="signal-strength">--</span>%</div>
+        </div>
+      </section>
+      
+      <!-- Security Card -->
+      <section class="neural-card transform hover:scale-105 transition duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl text-cosmic-blue font-extrabold flex items-center">
+            <i class="fas fa-shield-alt mr-3 text-neon-green"></i>Security 🔒
+          </h3>
+          <div class="neural-status status-standby font-extrabold" id="security-status">STANDBY</div>
+        </div>
+        <div id="security-details" class="text-xl space-y-3 font-semibold">
+          <div><i class="fas fa-lock text-green-400 mr-3"></i>Encryption: <span id="encryption-type">--</span></div>
+          <div><i class="fas fa-shield-check text-blue-400 mr-3"></i>Status: <span id="security-level">--</span></div>
+        </div>
+      </section>
+      
+      <!-- Overall Health Card -->
+      <section class="neural-card transform hover:scale-105 transition duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl text-cosmic-blue font-extrabold flex items-center">
+            <i class="fas fa-heart-pulse mr-3 text-neon-green"></i>Overall Health ❤️
+          </h3>
+          <div class="neural-status status-standby font-extrabold" id="health-status">STANDBY</div>
+        </div>
+        <div id="health-details" class="text-xl space-y-3 font-semibold">
+          <div id="health-summary">Awaiting cosmic analysis...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/js/script.js" defer></script>
+</body>
+</html>

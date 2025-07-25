@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+speedtest-cli
+httpx
+psutil
+python-dotenv
+pydantic
