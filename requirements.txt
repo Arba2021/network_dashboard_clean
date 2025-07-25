@@ -5,3 +5,4 @@ httpx
 psutil
 python-dotenv
 pydantic
+jinja2
