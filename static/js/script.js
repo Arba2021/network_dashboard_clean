@@ -172,13 +172,18 @@ function initStarfield() {
     animate();
 }
 
-// Fetch data from API with error handling
+// Fetch data from API with enhanced error handling
 async function fetchData(endpoint) {
+    console.log(`Attempting to fetch from /api/${endpoint}`);
     try {
         const response = await fetch(`/api/${endpoint}`, { timeout: 30000 });
+        console.log(`Response for ${endpoint}:`, response);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return await response.json();
+        const data = await response.json();
+        console.log(`Data for ${endpoint}:`, data);
+        return data;
     } catch (error) {
+        console.error(`Fetch error for ${endpoint}:`, error);
         return { error: `Failed to fetch ${endpoint}: ${error.message}` };
     }
 }
@@ -186,6 +191,10 @@ async function fetchData(endpoint) {
 // Update status indicators with visual feedback
 function updateStatus(elementId, status) {
     const statusElement = document.getElementById(elementId);
+    if (!statusElement) {
+        console.warn(`Status element with ID ${elementId} not found.`);
+        return;
+    }
     statusElement.classList.remove('status-standby', 'status-active', 'status-error');
     statusElement.classList.add(`status-${status.toLowerCase()}`);
     statusElement.textContent = status.toUpperCase();
@@ -195,6 +204,10 @@ function updateStatus(elementId, status) {
 let map = null;
 function initMap(latitude, longitude) {
     const mapDiv = document.getElementById('ip-map');
+    if (!mapDiv) {
+        console.warn('Map div with ID "ip-map" not found.');
+        return;
+    }
     mapDiv.style.display = 'block';
     mapDiv.style.height = '250px';
     if (map) map.remove();
@@ -247,78 +260,105 @@ function calculateHealth(speedData, wifiData) {
 async function initiateScan() {
     const scanBtn = document.getElementById('scanBtn');
     const loading = document.getElementById('loading');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (!scanBtn || !loading) {
+        console.error('Scan button or loading element not found.');
+        return;
+    }
+    if (loadingOverlay) loadingOverlay.style.display = 'block';
     scanBtn.disabled = true;
     scanBtn.textContent = 'Scanning...';
     scanBtn.classList.add('scanning');
     loading.style.display = 'inline';
 
-    const [speedData, ipData, deviceData, networkData, wifiData] = await Promise.all([
-        fetchData('speed'),
-        fetchData('ip'),
-        fetchData('device'),
-        fetchData('network'),
-        fetchData('wifi')
-    ]);
+    try {
+        const [speedData, ipData, deviceData, networkData, wifiData] = await Promise.all([
+            fetchData('speed'),
+            fetchData('ip'),
+            fetchData('device'),
+            fetchData('network'),
+            fetchData('wifi')
+        ]);
 
-    // Update Speed Test card
-    updateStatus('speed-status', speedData.error ? 'error' : 'active');
-    if (!speedData.error) {
-        document.getElementById('download-speed').textContent = speedData.download_mbps || '--';
-        document.getElementById('upload-speed').textContent = speedData.upload_mbps || '--';
-        document.getElementById('ping-time').textContent = speedData.ping_ms || '--';
-        document.getElementById('speed-isp').textContent = speedData.isp || '--';
-        document.getElementById('speed-host').textContent = speedData.host || '--';
-        document.getElementById('speed-server-location').textContent = speedData.server_location || '--';
-        document.getElementById('speed-latency').textContent = speedData.latency || '--';
-        document.getElementById('speed-packet-loss').textContent = speedData.packet_loss !== null ? speedData.packet_loss : '--';
-    } else {
-        document.getElementById('speed-details').innerHTML = `<div class="text-red-500">Error: ${speedData.error}</div>`;
-    }
+        // Update Speed Test card
+        updateStatus('speed-status', speedData.error ? 'error' : 'active');
+        if (!speedData.error) {
+            document.getElementById('download-speed').textContent = speedData.download_mbps || '--';
+            document.getElementById('upload-speed').textContent = speedData.upload_mbps || '--';
+            document.getElementById('ping-time').textContent = speedData.ping_ms || '--';
+            document.getElementById('speed-isp').textContent = speedData.isp || '--';
+            document.getElementById('speed-host').textContent = speedData.host || '--';
+            document.getElementById('speed-server-location').textContent = speedData.server_location || '--';
+            document.getElementById('speed-latency').textContent = speedData.latency || '--';
+            document.getElementById('speed-packet-loss').textContent = speedData.packet_loss !== null ? speedData.packet_loss : '--';
+        } else {
+            document.getElementById('speed-details').innerHTML = `<div class="text-red-500">Error: ${speedData.error}</div>`;
+        }
 
-    // Update IP Info card
-    updateStatus('ip-status', ipData.error ? 'error' : 'active');
-    if (!ipData.error && ipData.latitude && ipData.longitude) {
-        document.getElementById('public-ip').textContent = ipData.ip || '--';
-        initMap(parseFloat(ipData.latitude), parseFloat(ipData.longitude));
-    } else {
-        document.getElementById('ip-details').innerHTML = `<div class="text-red-500">Error: ${ipData.error || 'No location data'}</div>`;
-    }
+        // Update IP Info card
+        updateStatus('ip-status', ipData.error ? 'error' : 'active');
+        if (!ipData.error && ipData.latitude && ipData.longitude) {
+            document.getElementById('public-ip').textContent = ipData.ip || '--';
+            initMap(parseFloat(ipData.latitude), parseFloat(ipData.longitude));
+        } else {
+            document.getElementById('ip-details').innerHTML = `<div class="text-red-500">Error: ${ipData.error || 'No location data'}</div>`;
+        }
 
-    // Update Device Info card
-    updateStatus('device-status', deviceData.error ? 'error' : 'active');
-    if (!deviceData.error) {
-        document.getElementById('device-name').textContent = deviceData.device_name || '--';
-        document.getElementById('os-name').textContent = deviceData.platform || '--';
-        document.getElementById('platform-name').textContent = deviceData.release || '--';
-    } else {
-        document.getElementById('device-details').innerHTML = `<div class="text-red-500">Error: ${deviceData.error}</div>`;
-    }
+        // Update Device Info card
+        updateStatus('device-status', deviceData.error ? 'error' : 'active');
+        if (!deviceData.error) {
+            document.getElementById('device-name').textContent = deviceData.device_name || '--';
+            document.getElementById('os-name').textContent = deviceData.platform || '--';
+            document.getElementById('platform-name').textContent = deviceData.release || '--';
+        } else {
+            document.getElementById('device-details').innerHTML = `<div class="text-red-500">Error: ${deviceData.error}</div>`;
+        }
 
-    // Update Network Type card
-    updateStatus('network-status', networkData.error ? 'error' : 'active');
-    if (!networkData.error) {
-        document.getElementById('network-type').textContent = networkData.network_type || '--';
-    } else {
-        document.getElementById('network-details').innerHTML = `<div class="text-red-500">Error: ${networkData.error}</div>`;
-    }
-    if (!wifiData.error) {
-        document.getElementById('wifi-name').textContent = wifiData.network_name || '--';
-        document.getElementById('signal-strength').textContent = wifiData.signal_strength || '--';
-    } else {
-        document.getElementById('wifi-name').textContent = '--';
-        document.getElementById('signal-strength').textContent = '--';
-    }
+        // Update Network Type card
+        updateStatus('network-status', networkData.error ? 'error' : 'active');
+        if (!networkData.error) {
+            document.getElementById('network-type').textContent = networkData.network_type || '--';
+        } else {
+            document.getElementById('network-details').innerHTML = `<div class="text-red-500">Error: ${networkData.error}</div>`;
+        }
+        if (!wifiData.error) {
+            document.getElementById('wifi-name').textContent = wifiData.network_name || '--';
+            document.getElementById('signal-strength').textContent = wifiData.signal_strength || '--';
+        } else {
+            document.getElementById('wifi-name').textContent = '--';
+            document.getElementById('signal-strength').textContent = '--';
+        }
 
-    // Update Security card
-    updateStatus('security-status', wifiData.error ? 'error' : 'active');
-    if (!wifiData.error) {
-        document.getElementById('encryption-type').textContent = wifiData.secured || '--';
-        document.getElementById('security-level').textContent = wifiData.secured && (wifiData.secured.includes('WPA2') || wifiData.secured.includes('WPA3')) ? 'Secure' : 'Insecure';
-    } else {
-        document.getElementById('security-details').innerHTML = `<div class="text-red-500">Error: ${wifiData.error}</div>`;
-    }
+        // Update Security card
+        updateStatus('security-status', wifiData.error ? 'error' : 'active');
+        if (!wifiData.error) {
+            document.getElementById('encryption-type').textContent = wifiData.secured || '--';
+            document.getElementById('security-level').textContent = wifiData.secured && (wifiData.secured.includes('WPA2') || wifiData.secured.includes('WPA3')) ? 'Secure' : 'Insecure';
+        } else {
+            document.getElementById('security-details').innerHTML = `<div class="text-red-500">Error: ${wifiData.error}</div>`;
+        }
 
-    // Update Overall Health card
-    const health = calculateHealth(speedData, wifiData);
-    updateStatus('health-status', health.status.toLowerCase());
-    document.getElementById('health-summary').innerHTML = `Score: ${health.score}/100
+        // Update Overall Health card
+        const health = calculateHealth(speedData, wifiData);
+        updateStatus('health-status', health.status.toLowerCase());
+        document.getElementById('health-summary').innerHTML = `Score: ${health.score}/100 - ${health.summary}`;
+    } catch (error) {
+        console.error('Scan failed:', error);
+        updateStatus('speed-status', 'error');
+        document.getElementById('speed-details').innerHTML = `<div class="text-red-500">Error: Scan failed</div>`;
+    } finally {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'ACTIVATE COSMIC SCAN';
+        scanBtn.classList.remove('scanning');
+        loading.style.display = 'none';
+    }
+}
+
+// Attach scan event and initialize
+document.getElementById('scanBtn')?.addEventListener('click', initiateScan);
+window.onload = () => {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
+    initStarfield();
+};
